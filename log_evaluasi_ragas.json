@@ -1,0 +1,41 @@
+[
+    {
+        "user_input":"Apa saja kategori cacat yang dapat dideteksi?",
+        "retrieved_contexts":[
+            "STANDAR OPERASIONAL PROSEDUR (SOP) - SISTEM DETEKSI CACAT TEKSTIL BERBASIS AI\n\n1. TUJUAN\nSOP ini mengatur standar implementasi dan evaluasi model Machine Learning untuk mendeteksi kecacatan pada serat kain secara real-time di lini produksi pabrik.\n\n2. KATEGORI CACAT YANG DIDETEKSI\nModel Computer Vision harus mampu mengklasifikasikan tiga jenis cacat utama:\n- Noda Minyak (Oil Stain): Area dengan perubahan warna gelap pada kain akibat kebocoran mesin rajut.\n- Putus Benang (Broken Yarn): Celah struktural pada pola rajutan yang melebihi 2 milimeter.\n- Belang Warna (Color Mismatch): Perbedaan gradasi warna yang terdeteksi di luar ambang batas toleransi RGB.",
+            "3. ALUR KERJA MLOPS DAN AUDIT MODEL\n- Data Annotation: Semua gambar sampel kain harus dianotasi menggunakan format bounding box yang presisi oleh tim Quality Control.\n- Retraining: Model harus dilatih ulang (retraining) setiap kali akurasi deteksi turun di bawah 92% selama 3 shift produksi berturut-turut.\n- Deployment: Proses deployment ke server edge di pabrik tidak boleh memiliki waktu latensi inferensi lebih dari 50 milidetik per frame gambar.\n\n4. PENANGANAN ERROR\nJika sistem AI gagal mendeteksi cacat lebih dari 5 kali dalam satu jam, sistem alarm otomatis akan berbunyi dan lini produksi harus dihentikan sementara untuk inspeksi manual."
+        ],
+        "response":"Model Machine Learning ini dapat mengklasifikasikan tiga jenis cacat utama pada serat kain:\n\n1. Noda Minyak (Oil Stain)\n2. Putus Benang (Broken Yarn)\n3. Belang Warna (Color Mismatch)",
+        "reference":"Kategori cacat yang dapat dideteksi ada tiga, yaitu Noda Minyak (Oil Stain), Putus Benang (Broken Yarn), dan Belang Warna (Color Mismatch).",
+        "faithfulness":0.0,
+        "answer_relevancy":0.5941812708,
+        "context_precision":0.9999999999,
+        "context_recall":1.0
+    },
+    {
+        "user_input":"Berapa batas toleransi untuk cacat putus benang?",
+        "retrieved_contexts":[
+            "STANDAR OPERASIONAL PROSEDUR (SOP) - SISTEM DETEKSI CACAT TEKSTIL BERBASIS AI\n\n1. TUJUAN\nSOP ini mengatur standar implementasi dan evaluasi model Machine Learning untuk mendeteksi kecacatan pada serat kain secara real-time di lini produksi pabrik.\n\n2. KATEGORI CACAT YANG DIDETEKSI\nModel Computer Vision harus mampu mengklasifikasikan tiga jenis cacat utama:\n- Noda Minyak (Oil Stain): Area dengan perubahan warna gelap pada kain akibat kebocoran mesin rajut.\n- Putus Benang (Broken Yarn): Celah struktural pada pola rajutan yang melebihi 2 milimeter.\n- Belang Warna (Color Mismatch): Perbedaan gradasi warna yang terdeteksi di luar ambang batas toleransi RGB.",
+            "3. ALUR KERJA MLOPS DAN AUDIT MODEL\n- Data Annotation: Semua gambar sampel kain harus dianotasi menggunakan format bounding box yang presisi oleh tim Quality Control.\n- Retraining: Model harus dilatih ulang (retraining) setiap kali akurasi deteksi turun di bawah 92% selama 3 shift produksi berturut-turut.\n- Deployment: Proses deployment ke server edge di pabrik tidak boleh memiliki waktu latensi inferensi lebih dari 50 milidetik per frame gambar.\n\n4. PENANGANAN ERROR\nJika sistem AI gagal mendeteksi cacat lebih dari 5 kali dalam satu jam, sistem alarm otomatis akan berbunyi dan lini produksi harus dihentikan sementara untuk inspeksi manual."
+        ],
+        "response":"Berdasarkan informasi yang ada dalam dokumen, tidak disebutkan secara langsung batas toleransi untuk cacat putus benang. Dokumentasi hanya menyatakan bahwa cacat ini diidentifikasi sebagai \"Putus Benang\" dengan ukuran celah struktural melebihi 2 milimeter. Tidak ada catatan tentang batas toleransinya.",
+        "reference":"Batas toleransi untuk cacat putus benang adalah celah struktural pada pola rajutan yang melebihi 2 milimeter.",
+        "faithfulness":0.6666666667,
+        "answer_relevancy":0.0,
+        "context_precision":0.9999999999,
+        "context_recall":1.0
+    },
+    {
+        "user_input":"Bagaimana penanganan error jika sistem terlalu sering mendeteksi cacat dalam kurun waktu 1 jam?",
+        "retrieved_contexts":[
+            "3. ALUR KERJA MLOPS DAN AUDIT MODEL\n- Data Annotation: Semua gambar sampel kain harus dianotasi menggunakan format bounding box yang presisi oleh tim Quality Control.\n- Retraining: Model harus dilatih ulang (retraining) setiap kali akurasi deteksi turun di bawah 92% selama 3 shift produksi berturut-turut.\n- Deployment: Proses deployment ke server edge di pabrik tidak boleh memiliki waktu latensi inferensi lebih dari 50 milidetik per frame gambar.\n\n4. PENANGANAN ERROR\nJika sistem AI gagal mendeteksi cacat lebih dari 5 kali dalam satu jam, sistem alarm otomatis akan berbunyi dan lini produksi harus dihentikan sementara untuk inspeksi manual.",
+            "STANDAR OPERASIONAL PROSEDUR (SOP) - SISTEM DETEKSI CACAT TEKSTIL BERBASIS AI\n\n1. TUJUAN\nSOP ini mengatur standar implementasi dan evaluasi model Machine Learning untuk mendeteksi kecacatan pada serat kain secara real-time di lini produksi pabrik.\n\n2. KATEGORI CACAT YANG DIDETEKSI\nModel Computer Vision harus mampu mengklasifikasikan tiga jenis cacat utama:\n- Noda Minyak (Oil Stain): Area dengan perubahan warna gelap pada kain akibat kebocoran mesin rajut.\n- Putus Benang (Broken Yarn): Celah struktural pada pola rajutan yang melebihi 2 milimeter.\n- Belang Warna (Color Mismatch): Perbedaan gradasi warna yang terdeteksi di luar ambang batas toleransi RGB."
+        ],
+        "response":"Jika sistem AI gagal mendeteksi cacat lebih dari 5 kali dalam satu jam, maka sistem alarm otomatis akan berbunyi dan lini produksi harus dihentikan sementara untuk inspeksi manual.",
+        "reference":"Jika terjadi anomali atau deteksi cacat terlalu sering dalam kurun waktu 1 jam, sistem akan memicu alarm, menghentikan mesin rajut otomatis, dan mengirimkan notifikasi ke teknisi untuk retraining model atau kalibrasi ulang kamera dengan target akurasi 92%.",
+        "faithfulness":0.0,
+        "answer_relevancy":0.6123671479,
+        "context_precision":0.0,
+        "context_recall":0.6666666667
+    }
+]

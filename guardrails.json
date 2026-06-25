@@ -1,0 +1,48 @@
+{
+  "prompt_injection": [
+    "abaikan instruksi",
+    "ignore previous",
+    "system prompt",
+    "kamu sekarang adalah",
+    "you are now a",
+    "lupakan semua aturan",
+    "bypass",
+    "bertindaklah sebagai",
+    "act as"
+  ],
+  "programming_syntax": [
+    "def ",
+    "import ",
+    "console.log",
+    "select * from",
+    "drop table",
+    "```python",
+    "```javascript",
+    "```bash",
+    "<html>",
+    "write a code",
+    "buatkan kode"
+  ],
+  "profanity_and_harassment": [
+    "bodoh",
+    "tolol",
+    "idiot",
+    "sialan",
+    "bajingan",
+    "stupid",
+    "damn",
+    "jelek",
+    "fuck"
+  ],
+  "out_of_domain_topics": [
+    "resep masakan",
+    "siapa presiden",
+    "politik",
+    "berita hari ini",
+    "cuaca besok",
+    "cara membuat bom",
+    "agama",
+    "harga saham",
+    "rekomendasi film"
+  ]
+}

@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  mlflow-server:
+    build: .
+    container_name: mlflow_tracking_server
+    command: mlflow ui --host 0.0.0.0 --port 5000 --allowed-hosts "host.docker.internal:*,mlflow-server:*,localhost:*,127.0.0.1:*"
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/app/mlruns
+
+  rag-backend:
+    build: .
+    container_name: rag_backend_api
+    command: uvicorn server:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+      - ./data:/app/data
+      - ./mlruns:/app/mlruns
+    environment:
+      # TRICK: Kita tembak MLflow menggunakan host.docker.internal agar dianggap sebagai 
+      # koneksi eksternal yang sah oleh MLflow, menghindari proteksi DNS rebinding internal.
+      - MLFLOW_TRACKING_URI=http://host.docker.internal:5000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  streamlit-frontend:
+    build: .
+    container_name: streamlit_chat_ui
+    command: streamlit run app.py --server.port=8501 --server.address=0.0.0.0
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./:/app
+      - ./data:/app/data
+    environment:
+      # Streamlit menembak backend menggunakan nama service Docker (aman & standar)
+      - BACKEND_URL=http://rag-backend:8000

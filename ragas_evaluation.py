@@ -1,11 +1,16 @@
 import os
 from ragas import evaluate
-from ragas.metrics import faithfulness, answer_relevance, context_precision, context_recall
+from ragas.metrics import faithfulness, AnswerRelevancy, ContextPrecision, ContextRecall
+from ragas.llms import LangchainLLMWrapper
+from ragas.embeddings import LangchainEmbeddingsWrapper
+from langchain_ollama import ChatOllama
+from langchain_huggingface import HuggingFaceEmbeddings
 from datasets import Dataset
 import pandas as pd
 
-# 1. Siapkan Kumpulan Pertanyaan Uji dan Kunci Jawaban (Ground Truth)
-# Sesuaikan isi ground_truth di bawah ini dengan teks asli dari dokumen SOP tekstilmu
+from rag_engine import get_answer_rag, ingest_documents
+
+# 1. Definisikan Kumpulan Pertanyaan Uji dan Kunci Jawaban (Ground Truth)
 test_dataset = {
     "question": [
         "Apa saja kategori cacat yang dapat dideteksi?",
@@ -20,34 +25,40 @@ test_dataset = {
 }
 
 def jalankan_eval_otomatis():
-    print("🚀 Memulai proses evaluasi Ragas...")
+    data_ingest = ingest_documents(chunk_size=800, chunk_overlap=50)
+    print(data_ingest)
     
-    # Di tahap ini, kita perlu mensimulasikan pemanggilan fungsi dari rag_engine.py
-    # untuk mendapatkan kolom 'answer' dan 'contexts' dari masing-masing question di atas.
+    print("🚀 Inisialisasi Model Hakim (Judge) via ChatOllama Lokal...")
     
+    # 2. Inisialisasi Model Bahasa dan Embedding menggunakan paket resmi terbaru
+    llm_lokal = ChatOllama(model="qwen2.5:3b", base_url="http://127.0.0.1:11434", temperature=0)
+    embedding_lokal = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    
+    # Bungkus model ke dalam struktur Wrapper Ragas
+    ragas_llm = LangchainLLMWrapper(llm_lokal)
+    ragas_emb = LangchainEmbeddingsWrapper(embedding_lokal)
+    
+    # Siapkan metrik dan pasangkan juri lokal secara eksplisit
+    metrik_evaluasi = [faithfulness, AnswerRelevancy(), ContextPrecision(), ContextRecall()]
+    for metric in metrik_evaluasi:
+        metric.llm = ragas_llm
+        if hasattr(metric, 'embeddings'):
+            metric.embeddings = ragas_emb
+
+    print("📬 Mengumpulkan jawaban simulasi...")
     answers = []
     contexts = []
     
-    # TODO: Integrasikan dengan fungsi chat dari rag_engine.py kamu
-    # Contoh jalannya logika:
-    # for q in test_dataset["question"]:
-    #     hasil_rag = query_rag_engine(q)
-    #     answers.append(hasil_rag["answer"])
-    #     contexts.append(hasil_rag["source_chunks"]) # list of strings
+    # ambil data real
+    for q in test_dataset["question"]:
+        print(f"-> Memproses pertanyaan: {q}")
+        
+        # panggil fungsi backend
+        real_response = get_answer_rag(q)
+        
+        answers.append(real_response["answer"])
+        contexts.append(real_response["source_documents"])
     
-    # Untuk uji coba struktur awal, kita buat dummy data terlebih dahulu
-    answers = [
-        "Model bisa mendeteksi Noda Minyak, Putus Benang, dan Belang Warna.",
-        "Batas toleransinya adalah jika celah pola rajutan melebihi 2 milimeter.",
-        "Sistem akan membunyikan alarm dan menghentikan mesin otomatis untuk retraining."
-    ]
-    contexts = [
-        ["SOP mendeteksi tiga jenis cacat: Noda Minyak, Putus Benang, dan Belang Warna."],
-        ["Cacat putus benang memiliki batas toleransi celah struktural rajutan melebihi 2 milimeter."],
-        ["Jika cacat terlalu sering terdeteksi dalam 1 jam, sistem memicu alarm dan stop mesin otomatis."]
-    ]
-    
-    # 2. Konversi ke Format Dataset HuggingFace yang dibutuhkan Ragas
     ragas_data = {
         "question": test_dataset["question"],
         "answer": answers,
@@ -57,22 +68,32 @@ def jalankan_eval_otomatis():
     
     dataset = Dataset.from_dict(ragas_data)
     
-    # 3. Eksekusi Evaluasi Menggunakan Ragas
-    # Catatan: Ragas secara default membutuhkan koneksi ke OpenAI/LLM eksternal sebagai Judge.
-    # Kita bisa mengonfigurasinya agar menggunakan Qwen lokal kita sebagai Judge nanti.
-    print("📊 Menghitung skor metrik Ragas...")
+    print("📊 Memulai perhitungan skor metrik via Qwen2.5:3b...")
     try:
         score = evaluate(
             dataset=dataset,
-            metrics=[faithfulness, answer_relevance, context_precision, context_recall]
+            metrics=metrik_evaluasi
         )
         df_hasil = score.to_pandas()
         print("\n✅ Hasil Evaluasi Sukses!")
-        print(df_hasil)
+        print(df_hasil.to_string())
         
-        # Di tahap akhir nanti, nilai df_hasil ini akan kita kirim langsung ke MLflow
+        # jadikan json
+        nama_file_json = "log_evaluasi_ragas.json"
+        df_hasil.to_json(
+            nama_file_json,
+            orient="records",
+            indent=4,
+            force_ascii=False
+        )
+        
+        print(f"\n✅ Log Evaluasi Berhasil Disimpan ke dalam file {nama_file_json}!")
+        
+        return df_hasil
+        
     except Exception as e:
         print(f"❌ Gagal mengevaluasi: {str(e)}")
+        return None
 
 if __name__ == "__main__":
     jalankan_eval_otomatis()

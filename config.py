@@ -24,3 +24,8 @@ MLFLOW_EXPERIMENT_NAME = "RAG_Dokumen_Internal"
 # Mengarahkan LLM Ollama ke host WSL dari dalam Docker
 # OLLAMA_BASE_URL = "http://host.docker.internal:11434"
 OLLAMA_BASE_URL = "http://127.0.0.1:11434"
+
+# Konfigurasi parameter hasil tuning dan uji
+DEFAULT_CHUNK_SIZE = 500
+DEFAULT_CHUNK_OVERLAP = 50
+DEFAULT_TOP_K = 6

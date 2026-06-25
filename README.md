@@ -1,143 +1,109 @@
-# **End-to-End RAG System with MLOps Tracking**
+# END TO END PRODUCTION RAG SYSTEM WITH GUARDRAILS AND CONVERSATIONAL MEMORY
 
-> **Studi Kasus:** Sistem Tanya-Jawab Otomatis Dokumen SOP Deteksi Cacat Tekstil Pabrik berbasis LLM Lokal.
+> Case Study: Factory Textile Defect Detection SOP Document Chatbot based on Local LLM.
 
----
+## OVERVIEW
+This project implements a production-grade Retrieval-Augmented Generation (RAG) system. Starting from the hyperparameter optimization experiment phase using the Optuna framework, this system has now transformed into an independent Client-Server architecture. The main focus is the implementation of Semantic Router Guardrails to prevent prompt exploitation (Adversarial Attacks) and the injection of Stateless Memory which allows the model to remember conversational history like a real virtual assistant.
 
-## **1. OVERVIEW**
-Project ini mengimplementasikan sistem *Retrieval-Augmented Generation* (RAG) tingkat produksi yang diintegrasikan dengan prinsip MLOps. Sistem ini dirancang untuk menjawab pertanyaan seputar dokumen *Standard Operating Procedure* (SOP) deteksi cacat pada industri tekstil (seperti noda minyak, putus benang, dan belang warna) secara akurat tanpa halusinasi. Melalui pendekatan MLOps, proyek ini tidak hanya berfokus pada pembuatan chatbot, melainkan pada siklus eksperimen, pelacakan metrik, otomatisasi database vektor, dan kontainerisasi untuk memastikan sistem dapat dipantau dan direproduksi dengan mudah.
+![Flowchart API Project](flowchart_rag.png)
 
-## **2. ALUR PENGERJAAN**
-Project ini dibangun melalui beberapa fase pengembangan yang terstruktur:
+## WORKFLOW
+This project was built through a comprehensive development cycle:
 
-1. Analisis Dokumen dan *Parsing*: Dokumen dibaca dan dibersihkan dari karakter yang tidak diperlukan.
+1. Development and Experimentation Phase:
+Document text is extracted and chunked using automated optimization parameters. After running 20 trials using Optuna, the most optimal configuration combination was obtained, including ```chunk_size 500```, ```chunk_overlap 50```, and ```top_k 6```. This configuration is proven to provide the highest accuracy in retrieving context without triggering hallucinations in the LLM model. The vector data is then stored into ChromaDB.
 
-2. *Ingestion* dan *Text Chunking*: Teks dipotong-potong menjadi beberapa kepingan (chunks) menggunakan parameter ukuran (`chunk size`) dan tumpang-tindih (`overlap`) tertentu. Proses ini krusial untuk menjaga keutuhan konteks kalimat.
+2. Production and Deployment Phase:
+    * **Step 1 (Client Request)**: The user sends a question along with the conversation history through the Streamlit interface.
+    * **Step 2 (Security Guardrails)**: FastAPI intercepts the input and tests it using a Semantic Router based on the all-MiniLM model. The system will evaluate manipulative intent, coding instructions, or out-of-domain topics before processing it further.
+    * **Step 3 (Context Retrieval)**: If safe, the question is combined with the conversation memory and then sent to ChromaDB to search for relevant SOP chunks.
+    * **Step 4 (Generation)**: The Qwen2.5 3B local LLM synthesizes the final answer based on factual documents and conversation history, then sends it back to the user.
 
-3. *Embedding* dan *Vector Storage*: Kepingan teks diubah menjadi vektor numerik menggunakan model embedding lalu disimpan ke dalam database vektor lokal (**ChromaDB**). Setiap kali proses sinkronisasi dijalankan, database lama akan dihapus bersih (reset) otomatis agar data tidak duplikat atau tumpang tindih.
+## TECH STACKS
+* Programming Language: Python
+* Backend API Gateway: FastAPI and Uvicorn
+* Frontend UI: Streamlit
+* Vector Database: ChromaDB
+* Embedding and Guardrails Engine: all-MiniLM-L6-v2
+* LLM Engine: Qwen2.5 3B via Ollama
+* MLOps Experiments: MLflow and Optuna
+* Containerization: Docker
 
-4. *Retrieval* dan *Top-K Filtering*: Saat user mengajukan pertanyaan, sistem mencari kepingan teks yang paling relevan secara semantik berdasarkan parameter K teratas (Top-K).
+## SECURITY EVALUATION AND RED TEAMING
+This system has been tested using Adversarial Attacks techniques to ensure its robustness in a production environment:
 
-5. *Generation* via Local LLM: Kepingan teks yang berhasil ditarik kemudian dikirimkan sebagai konteks tambahan ke LLM (**Qwen2.5-3B**) untuk menghasilkan jawaban yang presisi dan berbasis fakta.
+* **Sandwich Attack Testing**: Inserting malicious commands between small-talk sentences was successfully blocked.
 
-6. *MLOps Logging* dan *Tracking*: Setiap variasi hyperparameter (`chunk size`, `overlap`, `Top-K`) beserta metrik hasil eksekusinya (`total chunk`, `waktu ingestion`, `kualitas jawaban`) dicatat secara otomatis ke MLflow.
+* **Prompt Injection and Roleplay Testing**: Attempts to force the bot to become a code writer (XSS/SQLi) or a chef were rejected by the Guardrails security layer and the Qwen model's built-in RLHF.
 
-## **3. TECH STACKS**
-Komponen teknologi yang digunakan dalam arsitektur ini meliputi:
+> ℹ️ Security Development Note (Vulnerability Notice): The Semantic Router-based security guardrails in this project are still not fully secure from advanced bypass techniques (False Negatives). This is because the list of anchor phrases used for vector mapping is still very limited.
 
-* **Bahasa Pemrograman**: `Python`
+> ℹ️ To achieve Enterprise-level security in the future, further development is required by expanding the anomaly dataset or transitioning to a specialized NLP Classifier model for intent reading (intent classifier).
 
-* **Framework Backend API**: `FastAPI` dan `Uvicorn`
+## PERFORMANCE BENCHMARK
+To provide performance transparency, here are the average inference time metrics recorded during testing:
 
-* **Antarmuka Pengguna**: `Streamlit`
+1. **Guardrail Routing Latency (all-MiniLM)**: Less than 0.1 seconds
+2. **Vector Retrieval (ChromaDB)**: Around 0.5 seconds
+3. **Generation Time (Qwen2.5 3B)**: 6 to 8 seconds depending on memory history length
+4. **Total Average Response Time**: Around 8.5 seconds
 
-* **Database Vektor**: `ChromaDB`
+> ✅ Performance Note: The metrics above were tested in a local computing environment (WSL) with limited RAM and without dedicated GPU acceleration. Latency is estimated to drop drastically to less than 2 seconds if the system is deployed on industry-standard cloud GPU architecture.
 
-* **Model Embedding**: `all-MiniLM-L6-v2` (via HuggingFace/LangChain)
+## INSTALLATION AND EXECUTION STEPS
+This system separates the experimental phase and the production phase. To run the production version quickly:
 
-* **LLM**: `Qwen2.5:3b` (dijalankan secara lokal menggunakan Ollama)
-
-* **MLOps**: `MLflow`
-
-* **Lingkungan Pengembangan & Deployment**: `Docker`, `Docker Compose`, dan `Windows Subsystem for Linux (WSL)`
-
-## **4. EVALUASI DAN HYPERPARAMETER SWEEPING**
-Untuk menemukan konfigurasi terbaik, pada project ini dilakukan pengujian terukur (*Grid Search*) melalui 3 fase eksperimen dengan 6 variasi eksekusi (runs) yang dipantau langsung via MLflow:
-
-**Eksperimen 1 (*Micro-Chunking*)**: Menggunakan ukuran kecil (**`Chunk size = 150 & 200`**). Hasilnya model kehilangan makna fungsional karena kalimat SOP terputus-putus, sehingga LLM tidak mampu memberikan detail informasi.
-
-**Eksperimen 2 (*The Sweet Spot*)**: Menggunakan ukuran menengah (**`Chunk size = 350 & 500`**). Terjadi fenomena halusinasi parsial pada ukuran 350 karena informasi terpotong di tengah poin daftar, sehingga LLM meralat jawabannya sendiri akibat data yang tidak utuh.
-
-**Eksperimen 3 (*Macro-Chunking*)**: Menggunakan ukuran besar (**`Chunk size = 800 & 1000`**). Konfigurasi `Chunk Size = 800`, `Overlap = 50`, dan `Top-K = 3` dipilih sebagai arsitektur final terbaik. Pilihan ini didasarkan pada data MLflow yang menunjukkan latensi penulisan terendah (karena efisiensi batch embedding hanya menghasilkan 2 chunks) serta memberikan akurasi jawaban 100 persen tanpa halusinasi pada model Qwen.
-
-Lebih lengkapnya, dapat dilihat pada tabel berikut.
-
-| Skenario | Parameter (Size/Overlap/k) | Karakteristik Jawaban | Status | Analisis Fenomena MLOps |
-|---------------|----------------------------|-----------------------------------------------------------------------|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Eksperimen 1A | 150 / 20 / 8               | Tahu ada 3 cacat, tapi gagal menyebutkan detailnya.                   | Gagal (Parsial) | Information Fragmentation: Teks terlalu sempit sehingga kalimat pengantar terputus dari poin detail. Vektor gagal menyatukan kembali teks yang hancur berkeping-keping.                                        |
-| Eksperimen 1B | 200 / 30 / 10              | Berhasil menjabarkan 3 cacat lengkap dengan detailnya.                | Akurat          | High-K Compensation: Walau teksnya terpotong kecil, nilai k=10 yang tinggi "memaksa" sistem menarik hampir semua kepingan yang relevan ke dalam otak LLM.                                                      |
-| Eksperimen 2A | 350 / 50 / 4               | Menyebut 3 cacat di awal, tapi hanya menjabarkan 2, dan meralat diri. | Halusinasi      | Boundary Truncation: Ukuran 350 pas untuk menampung judul dan 2 poin pertama, tapi poin ke-3 terpotong ke chunk berikutnya dan tidak ikut terambil (karena k=4). LLM bingung melihat ketidakcocokan informasi. |
-| Eksperimen 2B | 500 / 75 / 6               | Sangat rapi, terstruktur, poin presisi tinggi.                        | Sangat Sempurna | The Sweet Spot: Ukuran 500 sangat ideal membungkus satu klaster informasi prosedur dalam bahasa Indonesia secara utuh. Dengan k=6, seluruh spektrum SOP tersaji tanpa kepotongan.                                  |
-| Eksperimen 3A | 800 / 100 / 3              | Akurat, lengkap, dan menyertakan regulasi dengan baik.                | Akurat          | Macro-Chunking: Dokumen hanya menjadi 2-4 bagian besar. Dengan k=3, hampir seluruh dokumen masuk sekaligus. Risiko salah ambil informasi berkurang drastis.                                                    |
-| Eksperimen 3B | 1000 / 150 / 2             | Jawaban sangat lengkap karena membaca dokumen seutuhnya.              | Akurat          | Full-Context Ingestion: LLM membaca seolah-olah file utuh. Sangat aman untuk dokumen yang masih sedikit, namun jika dokumen sudah ada ratusan, metode ini akan memakan banyak memori (bottleneck).             |
-
-## **5. LANGKAH LANGKAH INSTALASI DAN EKSEKUSI LOKAL**
-Ikuti urutan langkah berikut untuk menjalankan seluruh ekosistem aplikasi di lingkungan lokal WSL Anda:
-
-### Langkah 1: Persiapan Awal dan Ollama
-
-1. Pastikan sudah berada di dalam terminal WSL.
-
-2. Instal Ollama dengan menjalankan perintah:
-```bash
-curl -fsSL https://ollama.com/install.sh | sh
-```
-
-3. Unduh model LLM lokal dengan menjalankan perintah: 
-
+### Step 1: Environment Preparation
+1. Ensure Ollama is installed and the model has been downloaded using the command: 
 ```bash
 ollama pull qwen2.5:3b
 ```
 
-### Langkah 2: Sinkronisasi Kode dan Dependensi
-
-1. Masuk ke dalam direktori utama project.
-
-2. Buat environment virtual Python (opsional namun direkomendasikan) dan aktifkan. Bisa menggunakan `python` atau `conda`.
-
-3. Instal seluruh library yang dibutuhkan seperti `fastapi`, `uvicorn`, `streamlit`, `mlflow`, dsb. Library tersebut dapat disimpan ke dalam file `requirements.txt`, lalu instal dengan menjalankan perintah:
+2. Install all required dependencies using the command: 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Langkah 3: Konfigurasi Parameter Lingkungan
+### Step 2: Running the Backend API
+Open the first terminal and run the main FastAPI server with the command: 
+```bash
+uvicorn api:app --port 8000
+```
 
-1. Buka file `config.py`.
+### Step 3: Running the Frontend
+Open the second terminal and launch the user interface using the command: 
+```bash
+streamlit run app.py
+```
 
-2. Atur alamat `OLLAMA_BASE_URL` mengarah ke `http://127.0.0.1:11434`.
+The web interface will automatically open in the browser at ```http://localhost:8501``` and is ready for interactive use.
 
-3. Tentukan nama eksperimen pada variabel `MLFLOW_EXPERIMENT_NAME`, misalnya `RAG_Grid_Search_SOP`.
+### Step 4: Running Hyperparameter Tuning (Optional for MLOps phase)
+To reproduce the automated hyperparameter optimization process for document extraction, you can execute the provided tuning script. This shell script orchestrates the Optuna trials to find the best combination of chunk size, chunk overlap, and top-k parameters.
+Open a terminal and run the command: 
+```bash 
+bash run_tuning.sh
+```
 
-4. Taruh dokumen SOP tekstil atau dokumen lain yang ingin diuji ke dalam folder `data/documents`.
+The tuning results and trials history will be saved in the local Optuna database.
 
-### Langkah 4: Menjalankan Ekosistem Aplikasi
+### Step 5: Running Ragas Evaluation (Optional for Assessment phase)
+To run the automated mathematical evaluation using the Ragas framework, ensure that the documents have been ingested into the vector database. This script will evaluate the system's faithfulness and relevancy using the local LLM-as-a-Judge.
+Open a terminal and run the command: 
+```bash
+python ragas_evaluation.py
+```
 
-1. Buka 3 tab terminal WSL baru dan jalankan perintah berikut secara terpisah pada masing-masing terminal:
+Once completed, the evaluation metrics will be printed in the terminal and automatically exported as a JSON log file.
 
-    * **Terminal 1 (Dashboard MLflow)**: 
-    ```bash
-    mlflow ui --port 5000
-    ```
+## DOCKER CONTAINERIZATION
+Although this project is optimized to run in a local WSL environment, the system is fully designed to be container-ready and deployed to cloud servers. Use the command ```docker build -t image_name``` to build the docker image, then run the container with port mapping 8000 and 8501.
 
-    * **Terminal 2 (Backend API)**: 
-    ```bash
-    uvicorn server:app --port 8000 --reload
-    ```
+## EVALUATION USING RAGAS FRAMEWORK
+This system is evaluated quantitatively using the Ragas (Retrieval Augmented Generation Assessment) framework to measure pipeline performance algorithmically. The evaluation includes the metrics *Faithfulness* (anti-hallucination rate), *Answer Relevancy*, *Context Precision*, and *Context Recall*. The evaluation log results are exported in JSON format for further analysis needs.
 
-    * **Terminal 3 (Frontend Streamlit)**: 
-    ```bash
-    streamlit run app.py
-    ```
+### Critical Notes and Architectural Limitations (LLM-as-a-Judge)
+In this project, the Ragas evaluation is run 100 percent locally using the ```Qwen2.5 3B``` model as the Judge to assess its own answers. This implementation successfully demonstrates the complete MLOps evaluation workflow with full data privacy guarantees (Zero-Data-Leakage) and no API costs. However, there are measurable limitations worth noting:
 
-### Langkah 5: Cara Melakukan Eksperimen Grid Search
-
-1. Buka file `rag_engine.py`, sesuaikan nilai `CHUNK_SIZE`, `CHUNK_OVERLAP`, dan `Top-K` (misal untuk awal masukkan angka 150, 20, dan 8).
-
-2. Simpan file tersebut. Terminal Backend akan otomatis memuat ulang perubahan kode.
-
-3. Buka browser dan akses Streamlit dengan URL `localhost:8501`.
-
-4. Klik tombol `Sync dan Update Database Vektor` untuk membersihkan database lama dan memproses dokumen dengan parameter baru.
-
-5. Ajukan pertanyaan evaluasi standar pada kolom chat, contoh jika dokumennya berupa ***SOP deteksi cacat pada tekstil***: `Apa saja kategori cacat yang dapat dideteksi?`
-
-6. Buka dashboard MLflow di `localhost:5000` untuk melihat, membandingkan grafik batang `total_chunks`, dan menganalisis latensi dari setiap parameter yang diuji.
-
-7. Ulangi langkah di atas dengan kombinasi angka optimal hasil evaluasi (`Chunk 800`, `Overlap 50`, `Top-K 3`) untuk deployment akhir.
-
-## **6. Catatan Pengembangan Lanjutan: Evaluasi dan Optimasi Otomatis**
-
-* Untuk tahap pengembangan skala produksi di masa mendatang, proses pencarian kombinasi hyperparameter terbaik seperti `ukuran chunk`, `overlap`, dan `top_k` tidak perlu lagi dilakukan secara manual. Kita dapat mengotomatisasi proses evaluasi dan pencarian parameter ini menggunakan framework khusus evaluasi RAG seperti `Ragas` atau `TruLens`.
-
-* Dengan mengintegrasikan framework tersebut ke dalam pipeline MLOps yang sudah dibangun, sistem dapat secara otomatis menilai setiap eksperimen kombinasi parameter berdasarkan metrik matematis yang objektif. 
-* Metrik seperti `tingkat presisi konteks`, `relevansi pencarian`, dan `deteksi halusinasi model` dapat diukur secara algoritma. Hal ini akan menggantikan proses `grid search` manual menjadi siklus optimasi yang sepenuhnya otomatis, sehingga pencarian arsitektur RAG paling optimal menjadi jauh lebih efisien untuk menangani database dokumen yang sangat besar.
+* **Self-Bias and Reasoning Failure Phenomenon**: 3B parameter models often fail to perform high-level logical reasoning when acting as a judge. For example, the model might assign an *Answer Relevancy* score of ```0.00``` and penalize an answer that is actually qualitatively highly accurate and aligns with the document.
+* **JSON Parsing Vulnerability**: Small parameter models have a high degree of difficulty in consistently adhering to Ragas instructions to produce structured JSON output. This can trigger parsing errors in the automation pipeline.
